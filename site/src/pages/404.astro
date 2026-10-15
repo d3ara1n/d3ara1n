@@ -1,0 +1,33 @@
+---
+import { getRelativeLocaleUrl } from 'astro:i18n';
+
+import SiteHeader from '@/components/SiteHeader.astro';
+import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { ui } from '@/i18n';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+// GitHub Pages serves a single 404.html for every path, so it carries both languages.
+const en = ui.en.notFound;
+const zh = ui.zh.notFound;
+---
+
+<BaseLayout locale="en" title={`404 · ${en.title}`} alternates={false}>
+  <SiteHeader locale="en" />
+  <main id="main" class="pass-through mx-auto grid min-h-[70dvh] max-w-xl place-items-center px-4">
+    <Card className="w-full -rotate-2 gap-4 bg-secondary-background p-8 text-center shadow-big sm:p-10">
+      <p class="font-heading text-[clamp(5rem,22vw,9rem)] leading-none text-chart-3">404</p>
+      <h1 class="font-heading text-2xl sm:text-3xl">{en.title}</h1>
+      <p>{en.body}</p>
+      <p lang="zh-CN" class="border-t-2 border-dashed border-border pt-4">
+        <span class="font-heading">{zh.title}</span>
+        <br />
+        {zh.body}
+      </p>
+      <div class="flex flex-wrap justify-center gap-3 pt-2">
+        <a href={getRelativeLocaleUrl('en')} class={buttonVariants()}>{en.back}</a>
+        <a href={getRelativeLocaleUrl('zh')} lang="zh-CN" class={buttonVariants({ variant: 'neutral' })}>{zh.back}</a>
+      </div>
+    </Card>
+  </main>
+</BaseLayout>

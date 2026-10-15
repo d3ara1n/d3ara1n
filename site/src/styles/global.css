@@ -1,0 +1,154 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Heavy CJK face for headings. Archivo Black has no CJK glyphs, and the browser's own
+ * fallback picks an unpredictable weight, so point at each platform's heaviest CJK font.
+ */
+@font-face {
+  font-family: "Heading CJK";
+  font-weight: 900;
+  font-display: swap;
+  src:
+    local("PingFangSC-Semibold"), local("PingFang SC Semibold"),
+    local("MicrosoftYaHei-Bold"), local("Microsoft YaHei Bold"),
+    local("NotoSansCJKsc-Black"), local("Noto Sans CJK SC Black"),
+    local("SourceHanSansSC-Heavy"), local("Source Han Sans SC Heavy");
+  unicode-range: U+2E80-9FFF, U+F900-FAFF, U+FE30-FE4F, U+FF00-FFEF;
+}
+
+@theme inline {
+  --color-main: var(--main);
+  --color-background: var(--background);
+  --color-secondary-background: var(--secondary-background);
+  --color-foreground: var(--foreground);
+  --color-main-foreground: var(--main-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-active-dot: var(--chart-active-dot);
+  --color-paper: var(--paper);
+  --spacing-boxShadowX: 4px;
+  --spacing-boxShadowY: 4px;
+  --spacing-reverseBoxShadowX: -4px;
+  --spacing-reverseBoxShadowY: -4px;
+  --radius-base: 0px;
+  --font-weight-base: 500;
+  --font-weight-heading: 700;
+  --shadow-shadow: var(--shadow);
+  --shadow-big: 8px 8px 0px 0px var(--border);
+  --font-sans: "Space Grotesk Variable", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
+  --font-heading: "Archivo Black", "Heading CJK", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  --animate-marquee: marquee 40s linear infinite;
+  --animate-marquee2: marquee2 40s linear infinite;
+
+  @keyframes marquee {
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-100%); }
+  }
+  @keyframes marquee2 {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(0%); }
+  }
+}
+
+:root {
+  --background: hsl(54, 92%, 88%);
+  --secondary-background: oklch(100% 0 0);
+  --main: hsl(49, 100%, 49%);
+  --ring: oklch(0% 0 0);
+  --foreground: oklch(0% 0 0);
+  --main-foreground: oklch(0% 0 0);
+  --border: oklch(0% 0 0);
+  --overlay: oklch(0% 0 0 / 0.8);
+  --shadow: 4px 4px 0px 0px var(--border);
+  --paper: hsl(45, 33%, 94%);
+  --chart-1: #FACC00;
+  --chart-2: #7A83FF;
+  --chart-3: #FF4D50;
+  --chart-4: #00D696;
+  --chart-5: #0099FF;
+  --chart-active-dot: #000;
+}
+
+@layer base {
+  html {
+    background: var(--paper);
+    scroll-behavior: smooth;
+  }
+  body {
+    font-family: var(--font-sans);
+    font-weight: var(--font-weight-base);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: var(--font-weight-heading);
+  }
+  ::selection {
+    background: var(--main);
+    color: var(--main-foreground);
+  }
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .animate-marquee,
+  .animate-marquee2 {
+    animation: none;
+  }
+}
+
+body, .scrollbar {
+  --sb-track-color: var(--paper);
+  --sb-thumb-color: #000000;
+}
+.scrollbar::-webkit-scrollbar {
+  width: 16px;
+}
+.scrollbar::-webkit-scrollbar-track {
+  background: var(--sb-track-color);
+}
+.scrollbar::-webkit-scrollbar-thumb {
+  background: var(--sb-thumb-color);
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .scrollbar {
+    scrollbar-color: var(--sb-thumb-color) var(--sb-track-color);
+  }
+}
+
+/*
+ * Archivo Black ships a single 400 weight. Asking for 900 without synthesis keeps Latin glyphs
+ * on the real face, while CJK fallback fonts resolve to their heaviest available weight.
+ */
+@utility font-heading {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-synthesis-weight: none;
+  letter-spacing: -0.02em;
+}
+
+/*
+ * Layout wrappers let pointer events fall through to the paper field behind them,
+ * while their direct children (the actual content blocks) stay interactive.
+ */
+@utility pass-through {
+  pointer-events: none;
+  & > * {
+    pointer-events: auto;
+  }
+}

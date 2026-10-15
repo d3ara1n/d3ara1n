@@ -1,0 +1,98 @@
+---
+import { Image } from 'astro:assets';
+import { ArrowDown, Star } from 'lucide-react';
+
+import avatar from '@/assets/avatar.jpg';
+import GithubIcon from '@/components/GithubIcon.astro';
+import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { projects } from '@/data/projects';
+import { profile, ui, type Locale } from '@/i18n';
+import { getStars } from '@/lib/github';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = ui[locale];
+
+// Sum of the featured projects only; omitted entirely if any count failed to load.
+const counts = await Promise.all(projects.map((p) => getStars(p.repo)));
+const totalStars = counts.every((c) => c !== null)
+  ? counts.reduce<number>((sum, c) => sum + (c ?? 0), 0)
+  : null;
+
+const keys = ['C', 'V', 'Ctrl'];
+---
+
+<section class="pass-through mx-auto max-w-6xl px-4 pt-14 pb-20 sm:px-6 sm:pt-20 lg:pb-28">
+  <Card className="relative gap-0 bg-secondary-background p-6 shadow-big sm:p-10 lg:-rotate-[0.6deg]">
+    <span
+      class="absolute -top-4 right-8 rotate-3 border-2 border-border bg-chart-3 px-3 py-1 font-heading text-sm text-white shadow-shadow"
+      aria-hidden="true"
+    >
+      @{profile.handle}
+    </span>
+
+    <div class="grid items-center gap-8 md:grid-cols-[auto_1fr]">
+      <div class="relative mx-auto w-36 shrink-0 rotate-[-4deg] sm:w-44 md:mx-0">
+        <Image
+          src={avatar}
+          alt={t.hero.avatarAlt}
+          width={352}
+          height={352}
+          loading="eager"
+          class="aspect-square w-full border-2 border-border object-cover shadow-shadow"
+        />
+        <span
+          class="absolute -top-3 left-1/2 h-6 w-20 -translate-x-1/2 rotate-[6deg] bg-white/70 outline outline-black/10"
+          aria-hidden="true"
+        ></span>
+      </div>
+
+      <div class="min-w-0">
+        <p class="font-heading text-xl sm:text-2xl">{t.hero.hello}</p>
+        <h1 class="font-heading text-[clamp(3.5rem,14vw,9rem)] leading-[0.85] tracking-tighter break-words">
+          {profile.name}<span class="text-chart-3">.</span>
+        </h1>
+      </div>
+    </div>
+
+    <p class="mt-8 flex flex-wrap items-center gap-x-2 gap-y-3 text-xl font-semibold sm:text-2xl">
+      <span>{t.hero.lead}</span>
+      {
+        keys.map((key, i) => (
+          <>
+            <kbd class="inline-block border-2 border-border bg-main px-2.5 py-0.5 font-heading text-lg shadow-[3px_3px_0_0_var(--border)] sm:text-xl">
+              {key}
+            </kbd>
+            {i < keys.length - 2 && <span class="-ml-1.5">{t.hero.sep}</span>}
+            {i === keys.length - 2 && <span>{t.hero.and}</span>}
+          </>
+        ))
+      }
+    </p>
+
+    <p class="mt-5 max-w-2xl text-lg leading-relaxed">{t.hero.bio}</p>
+
+    <div class="mt-8 flex flex-wrap items-center gap-3">
+      <a href="#projects" class={buttonVariants({ size: 'lg' })}>
+        {t.hero.cta}
+        <ArrowDown aria-hidden="true" />
+      </a>
+      <a href={profile.github} class={buttonVariants({ variant: 'neutral', size: 'lg' })}>
+        <GithubIcon class="size-4" />
+        GitHub
+      </a>
+      {
+        totalStars !== null && (
+          <span class="ml-1 inline-flex items-center gap-1.5 font-heading">
+            <Star className="size-4 fill-main" aria-hidden="true" />
+            {totalStars.toLocaleString(locale)} {t.hero.stars}
+          </span>
+        )
+      }
+    </div>
+  </Card>
+</section>

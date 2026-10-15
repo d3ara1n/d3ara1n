@@ -1,0 +1,536 @@
+---
+/**
+ * Background collage of paper scraps. The layout is generated from a fixed seed so
+ * every build renders the same static collage (visible without JS and with reduced
+ * motion); the script below then lets the scraps drift, dodge the pointer and be dragged.
+ */
+type Edge = 'top' | 'right' | 'bottom' | 'left';
+type Kind =
+  | 'note'
+  | 'grid'
+  | 'lined'
+  | 'dots'
+  | 'kraft'
+  | 'receipt'
+  | 'ticket'
+  | 'stamp'
+  | 'tape'
+  | 'letter';
+
+interface Scrap {
+  kind: Kind;
+  w: number;
+  h: number;
+  color?: string;
+  torn?: Edge[];
+  text?: string;
+  taped?: boolean;
+}
+
+function mulberry32(seed: number) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const rand = mulberry32(20261015);
+const between = (min: number, max: number) => min + (max - min) * rand();
+
+/** clip-path polygon with jagged points along the given edges. */
+function tornClip(edges: Edge[], depth = 7, teeth = 18): string {
+  const points: string[] = [];
+  const side = (edge: Edge, from: [number, number], to: [number, number], inward: [number, number]) => {
+    points.push(`${from[0]}% ${from[1]}%`);
+    if (!edges.includes(edge)) return;
+    for (let i = 1; i < teeth; i++) {
+      const t = i / teeth;
+      const bite = between(0, depth);
+      const x = from[0] + (to[0] - from[0]) * t + inward[0] * bite;
+      const y = from[1] + (to[1] - from[1]) * t + inward[1] * bite;
+      points.push(`${x.toFixed(1)}% ${y.toFixed(1)}%`);
+    }
+  };
+  side('top', [0, 0], [100, 0], [0, 1]);
+  side('right', [100, 0], [100, 100], [-1, 0]);
+  side('bottom', [100, 100], [0, 100], [0, -1]);
+  side('left', [0, 100], [0, 0], [1, 0]);
+  return `polygon(${points.join(', ')})`;
+}
+
+const scraps: Scrap[] = [
+  { kind: 'grid', w: 230, h: 170, torn: ['bottom'] },
+  { kind: 'note', w: 150, h: 150, color: '#ffe066', text: 'ship it', taped: true },
+  { kind: 'lined', w: 200, h: 250, torn: ['top'], text: 'todo\n– fix the dock\n– feed the squirrel\n– ctrl+s' },
+  { kind: 'receipt', w: 140, h: 230, text: 'C ........ 1\nV ........ 1\nCTRL ..... 1\n------------\nTOTAL      3' },
+  { kind: 'letter', w: 86, h: 104, color: '#ff4d50', text: 'C' },
+  { kind: 'kraft', w: 190, h: 120, torn: ['right'] },
+  { kind: 'ticket', w: 210, h: 84, color: '#7ec8ff', text: 'ADMIT ONE' },
+  { kind: 'letter', w: 86, h: 104, color: '#9be15d', text: 'V' },
+  { kind: 'dots', w: 170, h: 210, torn: ['left'] },
+  { kind: 'stamp', w: 96, h: 116, color: '#ff8fc8', text: '★' },
+  { kind: 'note', w: 124, h: 124, color: '#ff9fd2', text: 'hi!', taped: true },
+  { kind: 'letter', w: 184, h: 84, color: '#ffffff', text: 'Ctrl' },
+  { kind: 'tape', w: 150, h: 36 },
+  { kind: 'grid', w: 130, h: 160, torn: ['top', 'right'] },
+  { kind: 'kraft', w: 140, h: 190, torn: ['bottom'] },
+  { kind: 'note', w: 140, h: 140, color: '#8fd3ff', text: '42', taped: true },
+];
+
+// Stratified placement: one scrap per cell of a 4×4 grid, jittered, so they never clump.
+const cells = scraps.map((_, i) => i).sort(() => rand() - 0.5);
+const papers = scraps.map((scrap, i) => {
+  const cell = cells[i];
+  return {
+    ...scrap,
+    x: ((cell % 4) + between(0.02, 0.7)) / 4,
+    y: (Math.floor(cell / 4) + between(-0.1, 0.65)) / 4,
+    rotate: between(-24, 24),
+    depth: between(0.35, 1),
+    phase: between(0, Math.PI * 2),
+    clip: scrap.torn ? tornClip(scrap.torn) : undefined,
+    minor: i >= 10,
+  };
+});
+---
+
+<div class="paper-field" data-paper-field aria-hidden="true">
+  {
+    papers.map((p) => (
+      <div
+        class="paper"
+        data-paper
+        data-minor={p.minor ? '' : undefined}
+        data-x={p.x.toFixed(4)}
+        data-y={p.y.toFixed(4)}
+        data-r={p.rotate.toFixed(2)}
+        data-d={p.depth.toFixed(3)}
+        data-p={p.phase.toFixed(3)}
+        style={`--w:${p.w}px;--h:${p.h}px;--c:${p.color ?? '#fff'};left:${(p.x * 100).toFixed(2)}%;top:${(p.y * 100).toFixed(2)}%;transform:rotate(${p.rotate.toFixed(2)}deg)`}
+      >
+        <div class="sheet">
+          <div class:list={['face', p.kind, { bordered: !p.clip }]} style={p.clip ? `clip-path:${p.clip}` : undefined}>
+            {p.text && <span class="label">{p.text}</span>}
+          </div>
+          {p.taped && <span class="tape-strip" />}
+        </div>
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .paper-field {
+    --ps: 1;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  @media (max-width: 640px) {
+    .paper-field {
+      --ps: 0.62;
+    }
+    .paper[data-minor] {
+      display: none;
+    }
+  }
+
+  .paper {
+    position: absolute;
+    width: calc(var(--w) * var(--ps));
+    height: calc(var(--h) * var(--ps));
+    pointer-events: auto;
+    will-change: transform;
+    touch-action: auto;
+  }
+
+  @media (pointer: fine) {
+    .paper[data-live] {
+      cursor: grab;
+    }
+    .paper[data-dragging] {
+      cursor: grabbing;
+    }
+  }
+
+  .sheet {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(5px 5px 0 #000);
+    transition: filter 150ms ease;
+  }
+
+  .paper[data-dragging] .sheet {
+    filter: drop-shadow(10px 12px 0 #000);
+  }
+
+  .face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: var(--c);
+    color: #000;
+    font-size: calc(15px * var(--ps));
+  }
+
+  .face.bordered {
+    border: 2px solid #000;
+  }
+
+  .label {
+    white-space: pre;
+    line-height: 1.35;
+  }
+
+  .note .label {
+    font-family: var(--font-heading);
+    font-size: calc(24px * var(--ps));
+    rotate: -6deg;
+  }
+
+  .grid {
+    background-color: #fbfbf6;
+    background-image:
+      linear-gradient(rgb(0 110 255 / 0.28) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(0 110 255 / 0.28) 1px, transparent 1px);
+    background-size: calc(16px * var(--ps)) calc(16px * var(--ps));
+  }
+
+  .dots {
+    background-color: #fffdf4;
+    background-image: radial-gradient(#000 1.2px, transparent 1.4px);
+    background-size: calc(14px * var(--ps)) calc(14px * var(--ps));
+  }
+
+  .lined {
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: calc(34px * var(--ps)) calc(14px * var(--ps)) 0 calc(38px * var(--ps));
+    background-color: #fffdf5;
+    background-image:
+      linear-gradient(90deg, transparent calc(28px * var(--ps)), #ff4d50 0 calc(30px * var(--ps)), transparent 0),
+      repeating-linear-gradient(transparent 0 calc(20px * var(--ps) - 1px), rgb(0 110 255 / 0.35) 0 calc(20px * var(--ps)));
+    background-position: 0 0, 0 calc(14px * var(--ps));
+  }
+
+  .lined .label {
+    font-family: var(--font-mono);
+    font-size: calc(13px * var(--ps));
+    line-height: calc(20px * var(--ps));
+  }
+
+  .kraft {
+    background-color: #c9a06b;
+    background-image:
+      radial-gradient(rgb(0 0 0 / 0.12) 1px, transparent 1.5px),
+      radial-gradient(rgb(255 255 255 / 0.18) 1px, transparent 1.5px);
+    background-size: 9px 11px, 13px 7px;
+    background-position: 0 0, 4px 3px;
+  }
+
+  .receipt {
+    align-items: flex-start;
+    padding-top: calc(18px * var(--ps));
+    background: #fff;
+    border: 0;
+    clip-path: polygon(
+      0 0, 100% 0, 100% 96%, 95% 100%, 90% 96%, 85% 100%, 80% 96%, 75% 100%, 70% 96%, 65% 100%, 60% 96%,
+      55% 100%, 50% 96%, 45% 100%, 40% 96%, 35% 100%, 30% 96%, 25% 100%, 20% 96%, 15% 100%, 10% 96%, 5% 100%, 0 96%
+    );
+  }
+
+  .receipt .label {
+    font-family: var(--font-mono);
+    font-size: calc(12px * var(--ps));
+  }
+
+  .ticket {
+    border: 0;
+    -webkit-mask:
+      radial-gradient(circle calc(14px * var(--ps)) at 0 50%, #0000 98%, #000) left / 51% 100% no-repeat,
+      radial-gradient(circle calc(14px * var(--ps)) at 100% 50%, #0000 98%, #000) right / 51% 100% no-repeat;
+    mask:
+      radial-gradient(circle calc(14px * var(--ps)) at 0 50%, #0000 98%, #000) left / 51% 100% no-repeat,
+      radial-gradient(circle calc(14px * var(--ps)) at 100% 50%, #0000 98%, #000) right / 51% 100% no-repeat;
+  }
+
+  .ticket .label {
+    font-family: var(--font-heading);
+    font-size: calc(20px * var(--ps));
+    letter-spacing: 0.08em;
+    padding: 0.2em 0.6em;
+    border-block: 2px dashed #000;
+  }
+
+  .stamp {
+    --r: calc(6px * var(--ps));
+    border: 0;
+    padding: var(--r);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      radial-gradient(circle var(--r) at var(--r) var(--r), #0000 98%, #000) calc(-1 * var(--r)) calc(-1 * var(--r)) / calc(var(--r) * 2) calc(var(--r) * 2) round;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      radial-gradient(circle var(--r) at var(--r) var(--r), #0000 98%, #000) calc(-1 * var(--r)) calc(-1 * var(--r)) / calc(var(--r) * 2) calc(var(--r) * 2) round;
+  }
+
+  .stamp .label {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    outline: 2px solid #000;
+    outline-offset: calc(-8px * var(--ps));
+    font-size: calc(40px * var(--ps));
+  }
+
+  .letter .label {
+    font-family: var(--font-heading);
+    font-size: calc(var(--h) * var(--ps) * 0.62);
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+
+  .tape {
+    border: 0;
+    background: rgb(255 255 255 / 0.55);
+    background-image: repeating-linear-gradient(90deg, transparent 0 6px, rgb(0 0 0 / 0.06) 6px 7px);
+  }
+
+  .paper:has(.tape) .sheet {
+    filter: drop-shadow(3px 3px 0 rgb(0 0 0 / 0.5));
+  }
+
+  .tape-strip {
+    position: absolute;
+    top: calc(-12px * var(--ps));
+    left: 50%;
+    width: 46%;
+    height: calc(24px * var(--ps));
+    translate: -50% 0;
+    rotate: -4deg;
+    background: rgb(255 255 255 / 0.6);
+    background-image: repeating-linear-gradient(90deg, transparent 0 5px, rgb(0 0 0 / 0.07) 5px 6px);
+  }
+</style>
+
+<script>
+  interface Paper {
+    el: HTMLElement;
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    rot: number;
+    vr: number;
+    depth: number;
+    phase: number;
+    w: number;
+    h: number;
+    sx: number;
+    sy: number;
+  }
+
+  interface Drag {
+    paper: Paper;
+    pointerId: number;
+    offsetX: number;
+    offsetY: number;
+    lastTime: number;
+  }
+
+  /** How strongly scrolling shifts a scrap, scaled by its depth. */
+  const PARALLAX = 0.35;
+  const MAX_THROW = 1400;
+
+  const field = document.querySelector<HTMLElement>('[data-paper-field]');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (field && !reduceMotion) start(field);
+
+  function wrap(value: number, span: number, size: number) {
+    const period = span + size * 2;
+    return ((((value + size) % period) + period) % period) - size;
+  }
+
+  function start(field: HTMLElement) {
+    const papers: Paper[] = Array.from(field.querySelectorAll<HTMLElement>('[data-paper]')).map((el) => ({
+      el,
+      x: Number(el.dataset.x) * window.innerWidth,
+      y: Number(el.dataset.y) * window.innerHeight,
+      vx: 0,
+      vy: 0,
+      rot: Number(el.dataset.r),
+      vr: 0,
+      depth: Number(el.dataset.d),
+      phase: Number(el.dataset.p),
+      w: 0,
+      h: 0,
+      sx: 0,
+      sy: 0,
+    }));
+
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let pointerX = -1e4;
+    let pointerY = -1e4;
+    let drag: Drag | null = null;
+    let topZ = papers.length;
+
+    const measure = () => {
+      for (const p of papers) {
+        p.w = p.el.offsetWidth;
+        p.h = p.el.offsetHeight;
+      }
+    };
+
+    // Hand positioning over to transforms; the static left/top/rotate was only the no-JS collage.
+    for (const p of papers) {
+      p.el.style.left = '0';
+      p.el.style.top = '0';
+      p.el.dataset.live = '';
+    }
+    measure();
+
+    window.addEventListener('resize', () => {
+      const nextWidth = window.innerWidth;
+      const nextHeight = window.innerHeight;
+      for (const p of papers) {
+        p.x *= nextWidth / width;
+        p.y *= nextHeight / height;
+      }
+      width = nextWidth;
+      height = nextHeight;
+      measure();
+    });
+
+    window.addEventListener(
+      'pointermove',
+      (event) => {
+        pointerX = event.clientX;
+        pointerY = event.clientY;
+        if (!drag || event.pointerId !== drag.pointerId) return;
+
+        const p = drag.paper;
+        const nextX = event.clientX - drag.offsetX;
+        const nextY = event.clientY - drag.offsetY;
+        const elapsed = Math.max((event.timeStamp - drag.lastTime) / 1000, 1 / 240);
+        p.vx = p.vx * 0.5 + ((nextX - p.sx) / elapsed) * 0.5;
+        p.vy = p.vy * 0.5 + ((nextY - p.sy) / elapsed) * 0.5;
+        p.x += nextX - p.sx;
+        p.y += nextY - p.sy;
+        p.sx = nextX;
+        p.sy = nextY;
+        drag.lastTime = event.timeStamp;
+      },
+      { passive: true },
+    );
+
+    document.documentElement.addEventListener('pointerleave', () => {
+      pointerX = -1e4;
+      pointerY = -1e4;
+    });
+
+    // Mouse and pen only: on touch screens the scraps must never steal the scroll gesture.
+    field.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'touch' || event.button !== 0) return;
+      const el = (event.target as Element).closest<HTMLElement>('[data-paper]');
+      const paper = papers.find((p) => p.el === el);
+      if (!el || !paper) return;
+
+      event.preventDefault();
+      el.setPointerCapture(event.pointerId);
+      el.style.zIndex = String(++topZ);
+      el.dataset.dragging = '';
+      paper.vx = 0;
+      paper.vy = 0;
+      drag = {
+        paper,
+        pointerId: event.pointerId,
+        offsetX: event.clientX - paper.sx,
+        offsetY: event.clientY - paper.sy,
+        lastTime: event.timeStamp,
+      };
+    });
+
+    const release = (event: PointerEvent) => {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      const p = drag.paper;
+      delete p.el.dataset.dragging;
+      // A pause before letting go means the scrap was placed, not thrown.
+      if (event.timeStamp - drag.lastTime > 80) {
+        p.vx = 0;
+        p.vy = 0;
+      }
+      const speed = Math.hypot(p.vx, p.vy);
+      if (speed > MAX_THROW) {
+        p.vx *= MAX_THROW / speed;
+        p.vy *= MAX_THROW / speed;
+      }
+      p.vr += p.vx * 0.05;
+      drag = null;
+    };
+    field.addEventListener('pointerup', release);
+    field.addEventListener('pointercancel', release);
+
+    let last = performance.now();
+    let time = 0;
+
+    const frame = (now: number) => {
+      const dt = Math.min((now - last) / 1000, 0.05);
+      last = now;
+      time += dt;
+      const scroll = window.scrollY;
+
+      for (const p of papers) {
+        const dragged = drag?.paper === p;
+
+        if (!dragged) {
+          // A slow, slightly windy wander; deeper scraps move more.
+          const driftX = (Math.cos(time * 0.13 + p.phase) * 9 + 5) * p.depth;
+          const driftY = (Math.sin(time * 0.11 + p.phase * 1.7) * 7 - 2) * p.depth;
+          const ease = Math.min(1, dt * 0.8);
+          p.vx += (driftX - p.vx) * ease;
+          p.vy += (driftY - p.vy) * ease;
+
+          // Dodge the pointer.
+          const dx = p.sx + p.w / 2 - pointerX;
+          const dy = p.sy + p.h / 2 - pointerY;
+          const distance = Math.hypot(dx, dy);
+          const radius = 140 + Math.max(p.w, p.h) / 2;
+          if (distance < radius && distance > 0.01) {
+            const force = (1 - distance / radius) ** 2 * 2600 * dt;
+            p.vx += (dx / distance) * force;
+            p.vy += (dy / distance) * force;
+            p.vr += Math.sign(dx) * force * 0.15;
+          }
+
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+        }
+
+        p.vr *= Math.exp(-dt * 2.5);
+        p.rot += (p.vr + Math.sin(time * 0.3 + p.phase) * 2) * dt;
+
+        if (!dragged) {
+          p.sx = wrap(p.x, width, p.w);
+          p.sy = wrap(p.y - scroll * p.depth * PARALLAX, height, p.h);
+        }
+        p.el.style.transform = `translate3d(${p.sx.toFixed(1)}px, ${p.sy.toFixed(1)}px, 0) rotate(${p.rot.toFixed(2)}deg)`;
+      }
+
+      requestAnimationFrame(frame);
+    };
+
+    requestAnimationFrame(frame);
+  }
+</script>

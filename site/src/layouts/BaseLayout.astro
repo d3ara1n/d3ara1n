@@ -1,0 +1,69 @@
+---
+import '@fontsource/archivo-black/400.css';
+import '@fontsource-variable/space-grotesk';
+import '@/styles/global.css';
+
+import { getAbsoluteLocaleUrl } from 'astro:i18n';
+
+import PaperField from '@/components/PaperField.astro';
+import { htmlLang, locales, ogLocale, ui, type Locale } from '@/i18n';
+
+interface Props {
+  locale: Locale;
+  title?: string;
+  description?: string;
+  /** Emit hreflang alternates and a canonical URL. Off for pages without a translated twin (404). */
+  alternates?: boolean;
+}
+
+const { locale, title, description, alternates = true } = Astro.props;
+const t = ui[locale];
+const pageTitle = title ?? t.meta.title;
+const pageDescription = description ?? t.meta.description;
+const canonical = getAbsoluteLocaleUrl(locale);
+---
+
+<!doctype html>
+<html lang={htmlLang[locale]}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#fef6c4" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    {
+      alternates && (
+        <>
+          <link rel="canonical" href={canonical} />
+          {locales.map((l) => (
+            <link rel="alternate" hreflang={htmlLang[l]} href={getAbsoluteLocaleUrl(l)} />
+          ))}
+          <link rel="alternate" hreflang="x-default" href={getAbsoluteLocaleUrl('en')} />
+        </>
+      )
+    }
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="dearain.dev" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={ogLocale[locale]} />
+    <meta property="og:image" content={new URL('/og.png', Astro.site)} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="generator" content={Astro.generator} />
+  </head>
+  <body class="scrollbar relative min-h-dvh overflow-x-hidden bg-paper">
+    <a
+      href="#main"
+      class="sr-only z-50 border-2 border-border bg-main px-4 py-2 font-heading focus:not-sr-only focus:fixed focus:top-4 focus:left-4"
+    >
+      {t.skip}
+    </a>
+    <PaperField />
+    <div class="pass-through relative z-10">
+      <slot />
+    </div>
+  </body>
+</html>

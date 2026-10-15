@@ -1,0 +1,71 @@
+---
+import { Mail } from 'lucide-react';
+
+import Hero from '@/components/Hero.astro';
+import GithubIcon from '@/components/GithubIcon.astro';
+import ProjectCard from '@/components/ProjectCard.astro';
+import SiteFooter from '@/components/SiteFooter.astro';
+import SiteHeader from '@/components/SiteHeader.astro';
+import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import Marquee from '@/components/ui/marquee';
+import { projects } from '@/data/projects';
+import { profile, ui, type Locale } from '@/i18n';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = ui[locale];
+// Repeated so one row is wider than any viewport; otherwise the loop shows a gap.
+const ticker = Array.from({ length: 3 }, () => projects.flatMap((p) => [p.name, '✱'])).flat();
+---
+
+<BaseLayout locale={locale}>
+  <SiteHeader locale={locale} />
+
+  <main id="main" class="pass-through">
+    <Hero locale={locale} />
+
+    <div class="-rotate-2 shadow-big">
+      <Marquee
+        items={ticker}
+        className="bg-main"
+        rowClassName="py-4"
+        itemClassName="font-heading text-3xl sm:text-4xl"
+      />
+    </div>
+
+    <section id="projects" aria-labelledby="projects-title" class="pass-through mx-auto max-w-6xl scroll-mt-8 px-4 pt-24 sm:px-6">
+      <div class="mb-12 inline-block rotate-1 border-2 border-border bg-secondary-background px-5 py-3 shadow-shadow">
+        <h2 id="projects-title" class="font-heading text-4xl sm:text-6xl">{t.projects.title}</h2>
+        <p class="mt-1 text-lg">{t.projects.kicker}</p>
+      </div>
+
+      <div class="pass-through grid gap-14 lg:gap-20">
+        {projects.map((project, index) => <ProjectCard project={project} locale={locale} index={index} />)}
+      </div>
+    </section>
+
+    <section id="contact" aria-labelledby="contact-title" class="pass-through mx-auto max-w-3xl scroll-mt-8 px-4 pt-28 pb-16 sm:px-6">
+      <Card className="relative gap-5 bg-chart-2 p-8 text-center shadow-big sm:p-12 lg:rotate-1">
+        <h2 id="contact-title" class="font-heading text-5xl sm:text-7xl">{t.contact.title}</h2>
+        <p class="mx-auto max-w-md text-lg">{t.contact.body}</p>
+        <div class="flex flex-wrap justify-center gap-3 pt-2">
+          <a href={`mailto:${profile.email}`} class={buttonVariants({ variant: 'neutral', size: 'lg' })}>
+            <Mail aria-hidden="true" />
+            {profile.email}
+          </a>
+          <a href={profile.github} class={buttonVariants({ variant: 'neutral', size: 'lg' })}>
+            <GithubIcon class="size-4" />
+            {profile.handle}
+          </a>
+        </div>
+      </Card>
+    </section>
+  </main>
+
+  <SiteFooter locale={locale} />
+</BaseLayout>

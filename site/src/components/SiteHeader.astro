@@ -1,0 +1,56 @@
+---
+import { getRelativeLocaleUrl } from 'astro:i18n';
+
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { localeLabel, locales, ui, type Locale } from '@/i18n';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = ui[locale];
+const home = getRelativeLocaleUrl(locale);
+const section = (id: string) => `${home.replace(/\/$/, '')}/#${id}`;
+---
+
+<header class="pass-through mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 pt-6 sm:px-6">
+  <a
+    href={home}
+    class="border-2 border-border bg-secondary-background px-3 py-1.5 font-heading text-lg shadow-shadow transition-transform hover:-rotate-2"
+  >
+    dearain<span class="text-chart-3">.</span>dev
+  </a>
+
+  <nav class="flex flex-wrap items-center gap-3" aria-label={t.nav.main}>
+    <a href={section('projects')} class={buttonVariants({ variant: 'neutral', size: 'sm' })}>
+      {t.nav.projects}
+    </a>
+    <a href={section('contact')} class={buttonVariants({ variant: 'neutral', size: 'sm' })}>
+      {t.nav.contact}
+    </a>
+    <div
+      role="group"
+      aria-label={t.nav.language}
+      class="flex border-2 border-border bg-secondary-background shadow-shadow"
+    >
+      {
+        locales.map((l) => (
+          <a
+            href={getRelativeLocaleUrl(l)}
+            hreflang={l}
+            lang={l === 'zh' ? 'zh-CN' : 'en'}
+            aria-current={l === locale ? 'page' : undefined}
+            class={cn(
+              'px-3 py-1.5 text-sm font-heading not-last:border-r-2 not-last:border-border',
+              l === locale ? 'bg-main' : 'hover:bg-background',
+            )}
+          >
+            {localeLabel[l]}
+          </a>
+        ))
+      }
+    </div>
+  </nav>
+</header>
