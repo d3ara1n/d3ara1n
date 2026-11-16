@@ -1,5 +1,6 @@
 import type { ImageMetadata } from 'astro';
 
+import asterismShot from '@/assets/projects/asterism.png';
 import huskuiShot from '@/assets/projects/huskui.png';
 import polymeriumShot from '@/assets/projects/polymerium.png';
 import tidebarShot from '@/assets/projects/tidebar.png';
@@ -25,6 +26,44 @@ export interface Project {
 }
 
 export const projects: Project[] = [
+  {
+    slug: 'asterism',
+    name: 'Asterism',
+    repo: 'd3ara1n/asterism',
+    url: 'https://asterism.dearain.dev',
+    accent: '#c4b5fd',
+    tech: ['TypeScript', 'Electron', 'React', 'macOS · Windows · Linux'],
+    visual: {
+      kind: 'image',
+      src: asterismShot,
+      alt: {
+        en: 'Asterism session canvas: an agent linked to a directory, the manual, a subagent pool, web search and MCP servers',
+        zh: 'Asterism 会话画布：智能体与目录、内置手册、子代理池、网页搜索和 MCP 服务相连',
+      },
+    },
+    tagline: {
+      en: 'A local-first workbench for working with agents.',
+      zh: '本地优先的智能体工作台。',
+    },
+    summary: {
+      en: 'Agents, project directories, notes, terminals and external tools sit together as cards on one canvas. Being on the canvas grants nothing: a directed link decides what each agent can reach.',
+      zh: '智能体、项目目录、笔记、终端与外部工具作为卡片放在同一张画布上。放上画布并不授予任何权限，有向链接决定每个智能体能访问什么。',
+    },
+    highlights: {
+      en: [
+        'Separate agent contexts that hand off reports across links, without merging memory.',
+        'Branching history: return to any earlier turn and continue while the old path stays on record.',
+        'Subagent pools, live terminals, web search, MCP servers and schedules as linkable resources.',
+        'Built-in features load through the same public plugin SDK as yours. Sessions stay on your machine.',
+      ],
+      zh: [
+        '智能体各自持有独立上下文，沿链接传递汇报，记忆互不混合。',
+        '树状分支历史：回到任意一轮继续推进，原有路径完整保留。',
+        '子代理池、实时终端、网页搜索、MCP 服务与定时提醒都是可链接的资源。',
+        '内置功能与第三方插件走同一套公开 SDK。会话数据保存在本机。',
+      ],
+    },
+  },
   {
     slug: 'polymerium',
     name: 'Polymerium',

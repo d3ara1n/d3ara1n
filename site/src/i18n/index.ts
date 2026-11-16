@@ -10,7 +10,7 @@ const en = {
   meta: {
     title: 'Dearain — developer',
     description:
-      'Dearain (d3ara1n) builds desktop apps, UI libraries and tools for coding agents: Polymerium, Huskui.Avalonia, TideBar and pi-extensions.',
+      'Dearain (d3ara1n) builds desktop apps, UI libraries and tools for coding agents: Asterism, Polymerium, Huskui.Avalonia, TideBar and pi-extensions.',
   },
   skip: 'Skip to content',
   nav: { main: 'Main', projects: 'Projects', contact: 'Contact', language: 'Language' },
@@ -50,7 +50,7 @@ const zh: typeof en = {
   meta: {
     title: 'Dearain — 开发者',
     description:
-      'Dearain（d3ara1n）做桌面应用、UI 库和给编程 Agent 用的工具：Polymerium、Huskui.Avalonia、TideBar 与 pi-extensions。',
+      'Dearain（d3ara1n）做桌面应用、UI 库和给编程 Agent 用的工具：Asterism、Polymerium、Huskui.Avalonia、TideBar 与 pi-extensions。',
   },
   skip: '跳到正文',
   nav: { main: '主导航', projects: '项目', contact: '联系', language: '语言' },
